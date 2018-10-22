@@ -3,7 +3,8 @@ Type: Package
 Title: Quickly create in-analysis data frames. Useful in conjunction with dplyr::left_join()
 Depends: 
     R (>= 3.1.2),
-    shiny (>= 0.13)
+    shiny (>= 1.0.0),
+    magrittr (>= 1.2.0)
 Imports:
     dplyr (>= 0.7.4),
     clipr(>= 0.4.0),

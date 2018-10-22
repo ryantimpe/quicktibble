@@ -30,8 +30,8 @@ quicktibble <- function(dat = NULL){
       )
     ),
     miniUI::miniContentPanel(
-      DT::dataTableOutput("rhot")
-      # rhandsontable::rHandsontableOutput("rhot")
+      # DT::dataTableOutput("rhot")
+      rhandsontable::rHandsontableOutput("hot")
     )
 
     ) #End UI
@@ -71,9 +71,19 @@ quicktibble <- function(dat = NULL){
       return(dat)
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
 
-    output$rhot <- DT::renderDataTable(df.start())
+    # output$rhot <- DT::renderDataTable(df.start())
 
-    # output$rhot <- rhandsontable::renderRHandsontable(df.start())
+    output$hot = rhandsontable::renderRHandsontable({
+      if (!is.null(input$hot)) {
+        DF = rhandsontable::hot_to_r(input$hot)
+      } else {
+        DF = df.start()
+      }
+
+      rhandsontable::rhandsontable(DF) %>%
+        rhandsontable::hot_table(highlightCol = TRUE, highlightRow = TRUE)
+    })
+
   } #End Server
 
   ####
