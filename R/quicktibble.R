@@ -22,9 +22,13 @@ quicktibble <- function(dat = NULL){
                            choices = NULL)
                ),
         column(width = 3,
-               checkboxInput("setUnique", "Unique values", value = TRUE)
+               textInput("setCol2", label = NULL, value ="Col2", placeholder = "Column 2 name"),
+               textInput("setCol3", label = NULL, value ="", placeholder = "Column 3 name"),
+               textInput("setCol4", label = NULL, value ="", placeholder = "Column 4 name")
                ),
         column(width = 3,
+               checkboxInput("setUnique", "Unique values", value = TRUE),
+               hr(),
                actionButton("selInputBuild", label = "Create")
                )
       )
@@ -67,6 +71,18 @@ quicktibble <- function(dat = NULL){
 
       dat <- tibble::tibble(starting.column, V2 = "")
       names(dat)[1] <- input$selInputColumn
+      names(dat)[2] <- input$setCol2
+
+      if(input$setCol3 != ""){
+        dat <- dat %>%
+          dplyr::mutate(.col3 = "")
+        names(dat)[names(dat) == ".col3"] <- input$setCol3
+      }
+      if(input$setCol4 != ""){
+        dat <- dat %>%
+          dplyr::mutate(.col4 = "")
+        names(dat)[names(dat) == ".col4"] <- input$setCol4
+      }
 
       return(dat)
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
