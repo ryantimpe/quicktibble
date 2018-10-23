@@ -39,8 +39,11 @@ quicktibble <- function(dat = NULL){
                checkboxInput("setUnique", "Unique values", value = TRUE),
                hr(),
                textInput("setOPname", label = NULL, value = "QuickTibble", placeholder = "Output Name"),
-               actionButton("selInputBuild", label = "Create")
+               conditionalPanel(
+                 condition = "input.selInputBuild == 0",
+                 actionButton("selInputBuild", label = "Create")
                )
+        )
       )
     ),
     miniUI::miniContentPanel(
@@ -128,7 +131,7 @@ quicktibble <- function(dat = NULL){
         }
 
         op <- paste0("opName <- tibble::tibble(",
-                     paste(purrr::map_chr(1:ncol(dat), collapse_col2, dat), collapse = ", "),
+                     paste(purrr::map_chr(1:ncol(dat), collapse_col2, dat), collapse = ",\n"),
                      ")")
 
         rstudioapi::insertText(Inf, op)
@@ -147,7 +150,7 @@ quicktibble <- function(dat = NULL){
   # Addin settings ----
   ####
 
-  viewer <- dialogViewer(paste("quicktibble -", deparse(substitute("hi"))), width = 1400, height= 2000)
+  viewer <- dialogViewer(paste("quicktibble"), width = 1200, height= 1200)
 
 
   runGadget(ui, server, viewer = viewer)
