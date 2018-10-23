@@ -5,6 +5,9 @@ quicktibble <- function(dat = NULL){
   ################
   # Non-Reactive functions ----
   ################
+  collapse_col2 <- function(index, data){
+    paste0(names(data)[index], " = c( '", paste0(data[, index], collapse = "', '"), "')")
+  }
 
   ################
   # UI ----
@@ -47,7 +50,8 @@ quicktibble <- function(dat = NULL){
       )
     ),
     miniUI::miniContentPanel(
-      rhandsontable::rHandsontableOutput("hot")
+      rhandsontable::rHandsontableOutput("hot"),
+      verbatimTextOutput("opPreview")
     )
 
     ) #End UI
@@ -75,7 +79,7 @@ quicktibble <- function(dat = NULL){
     # Build starting data frame
     ###
     df.start <- eventReactive(input$selInputBuild, {
-      starting.column <- get(input$selInputData)[, input$selInputColumn]
+      starting.column <- tibble::as.tibble(get(input$selInputData)[, input$selInputColumn]) %>% dplyr::pull()
 
       if(input$setUnique){
         starting.column <- unique(starting.column)
@@ -119,6 +123,22 @@ quicktibble <- function(dat = NULL){
         rhandsontable::hot_col(col = input$selInputColumn,  strict = FALSE, allowInvalid = TRUE)
     })
 
+    # Preview the output
+    output$opPreview <- renderText({
+      hot = input$hot
+      if (!is.null(hot)) {
+
+        opName <- if(input$setOPname == ""){"QuickTibble"}else{input$setOPname}
+        dat <- rhandsontable::hot_to_r(hot)
+
+        op <- paste0(opName, " <- tibble::tibble(",
+                     paste(purrr::map_chr(1:ncol(dat), collapse_col2, dat), collapse = ",\n"),
+                     ")")
+
+
+    } else {op <- "Print Preview"}
+      return(op)})
+
     # Listen for 'done' events.
     observeEvent(input$done, {
       hot = isolate(input$hot)
@@ -127,11 +147,7 @@ quicktibble <- function(dat = NULL){
         opName <- if(input$setOPname == ""){"QuickTibble"}else{input$setOPname}
         dat <- rhandsontable::hot_to_r(hot)
 
-        collapse_col2 <- function(index, data){
-          paste0(names(data)[index], " = c( '", paste0(data[, index], collapse = "', '"), "')")
-        }
-
-        op <- paste0("opName <- tibble::tibble(",
+        op <- paste0(opName, " <- tibble::tibble(",
                      paste(purrr::map_chr(1:ncol(dat), collapse_col2, dat), collapse = ",\n"),
                      ")")
 
