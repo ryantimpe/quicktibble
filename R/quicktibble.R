@@ -38,12 +38,12 @@ quicktibble <- function(dat = NULL){
         column(width = 3,
                checkboxInput("setUnique", "Unique values", value = TRUE),
                hr(),
+               textInput("setOPname", label = NULL, value = "QuickTibble", placeholder = "Output Name"),
                actionButton("selInputBuild", label = "Create")
                )
       )
     ),
     miniUI::miniContentPanel(
-      # DT::dataTableOutput("rhot")
       rhandsontable::rHandsontableOutput("hot")
     )
 
@@ -103,8 +103,6 @@ quicktibble <- function(dat = NULL){
       return(dat)
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
 
-    # output$rhot <- DT::renderDataTable(df.start())
-
     output$hot = rhandsontable::renderRHandsontable({
       if (!is.null(input$hot)) {
         DF = rhandsontable::hot_to_r(input$hot)
@@ -115,6 +113,32 @@ quicktibble <- function(dat = NULL){
       rhandsontable::rhandsontable(DF) %>%
         rhandsontable::hot_table(highlightCol = TRUE, highlightRow = TRUE) %>%
         rhandsontable::hot_context_menu(allowRowEdit = TRUE, allowColEdit = TRUE)
+    })
+
+    # Listen for 'done' events.
+    observeEvent(input$done, {
+      hot = isolate(input$hot)
+      if (!is.null(hot)) {
+
+        opName <- if(input$setOPname == ""){"QuickTibble"}else{input$setOPname}
+        dat <- rhandsontable::hot_to_r(hot)
+
+        collapse_col2 <- function(index, data){
+          paste0(names(data)[index], " = c( '", paste0(data[, index], collapse = "', '"), "')")
+        }
+
+        op <- paste0("opName <- tibble::tibble(",
+                     paste(purrr::map_chr(1:ncol(dat), collapse_col2, dat), collapse = ", "),
+                     ")")
+
+        rstudioapi::insertText(Inf, op)
+      }
+
+      stopApp()
+    })
+
+    session$onSessionEnded(function() {
+      stopApp()
     })
 
   } #End Server
