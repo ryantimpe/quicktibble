@@ -115,7 +115,8 @@ quicktibble <- function(dat = NULL){
 
       rhandsontable::rhandsontable(DF) %>%
         rhandsontable::hot_table(highlightCol = TRUE, highlightRow = TRUE) %>%
-        rhandsontable::hot_context_menu(allowRowEdit = TRUE, allowColEdit = TRUE)
+        rhandsontable::hot_context_menu(allowRowEdit = TRUE, allowColEdit = TRUE) %>%
+        rhandsontable::hot_col(col = input$selInputColumn,  strict = FALSE, allowInvalid = TRUE)
     })
 
     # Listen for 'done' events.
