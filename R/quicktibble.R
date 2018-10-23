@@ -15,9 +15,7 @@ quicktibble <- function(dat = NULL){
       fluidRow(
         column(width = 3,
                selectInput("selInputData", label = "From data frame",
-                           choices = c("None", names(eapply(.GlobalEnv,is.data.frame))[unlist(eapply(.GlobalEnv,is.data.frame))]))
-               ),
-        column(width = 3,
+                           choices = c("None", names(eapply(.GlobalEnv,is.data.frame))[unlist(eapply(.GlobalEnv,is.data.frame))])),
                selectInput("selInputColumn", label = "From column",
                            choices = NULL)
                ),
@@ -26,6 +24,17 @@ quicktibble <- function(dat = NULL){
                textInput("setCol3", label = NULL, value ="", placeholder = "Column 3 name"),
                textInput("setCol4", label = NULL, value ="", placeholder = "Column 4 name")
                ),
+        column(width = 3,
+               checkboxInput("setWeight", "Weight column?", value = FALSE),
+               conditionalPanel(
+                 condition = "input.setWeight == true",
+                 p("When complete, scale weights?"),
+                 radioButtons("setWeightScale", label = NULL,
+                              choices = c("No" = "no", "Total to 100%" = "total", "Groups to 100%" = "groups"),
+                              selected = "no",
+                              inline = TRUE)
+               )
+        ),
         column(width = 3,
                checkboxInput("setUnique", "Unique values", value = TRUE),
                hr(),
@@ -73,15 +82,22 @@ quicktibble <- function(dat = NULL){
       names(dat)[1] <- input$selInputColumn
       names(dat)[2] <- input$setCol2
 
+      #Additional columns
       if(input$setCol3 != ""){
         dat <- dat %>%
-          dplyr::mutate(.col3 = "")
-        names(dat)[names(dat) == ".col3"] <- input$setCol3
+          dplyr::mutate(.col = "")
+        names(dat)[names(dat) == ".col"] <- input$setCol3
       }
       if(input$setCol4 != ""){
         dat <- dat %>%
-          dplyr::mutate(.col4 = "")
-        names(dat)[names(dat) == ".col4"] <- input$setCol4
+          dplyr::mutate(.col = "")
+        names(dat)[names(dat) == ".col"] <- input$setCol4
+      }
+
+      #Weight Column
+      if(input$setWeight){
+        dat <- dat %>%
+          dplyr::mutate(.Weight = 1)
       }
 
       return(dat)
