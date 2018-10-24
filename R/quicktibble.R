@@ -153,7 +153,7 @@ quicktibble <- function(dat = NULL){
         DF = df.start()
       }
 
-      rhandsontable::rhandsontable(DF) %>%
+      rhandsontable::rhandsontable(DF, height = 1000) %>%
         rhandsontable::hot_table(highlightCol = TRUE, highlightRow = TRUE) %>%
         rhandsontable::hot_context_menu(allowRowEdit = TRUE, allowColEdit = TRUE) %>%
         rhandsontable::hot_col(col = input$selInputColumn,  strict = FALSE, allowInvalid = TRUE)
@@ -172,12 +172,12 @@ quicktibble <- function(dat = NULL){
           #Scale to total...
           if(input$setWeightScale == "total"){
             dat <- dat %>%
-              dplyr::mutate(.Weight = .Weight / sum(.Weight))
+              dplyr::mutate(.Weight = round(.Weight / sum(.Weight), 5))
             #Scale to a column....
           } else if(input$setWeightScale != "no"){
             dat <- dat %>%
               dplyr::group_by(!!!rlang::syms(c(input$setWeightScale))) %>%
-              dplyr::mutate(.Weight = round(.Weight / sum(.Weight)), 5) %>%
+              dplyr::mutate(.Weight = round(.Weight / sum(.Weight), 5)) %>%
               dplyr::ungroup() %>%
               as.data.frame()
           } else {dat <- dat} #Other don't scale
