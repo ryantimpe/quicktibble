@@ -32,14 +32,20 @@ quicktibble <- function(dat = NULL){
                              choices = NULL)
           ),
           column(width = 3,
+                 strong("Column names"),
+                 helpText("Leave blank to not include"),
                  textInput("setCol2", label = NULL, value ="Col2", placeholder = "Column 2 name"),
-                 textInput("setCol3", label = NULL, value ="", placeholder = "Column 3 name"),
-                 textInput("setCol4", label = NULL, value ="", placeholder = "Column 4 name")
+                 textInput("setCol3", label = NULL, value ="", placeholder = "Column 3 name")
+
           ),
           column(width = 3,
-                 checkboxInput("setWeight", "Weight column?", value = FALSE)
+                 br(),
+                 br(),
+                 textInput("setCol4", label = NULL, value ="", placeholder = "Column 4 name"),
+                 textInput("setCol5", label = NULL, value ="", placeholder = "Column 5 name")
           ),
           column(width = 3,
+                 checkboxInput("setWeight", "Weight column?", value = FALSE),
                  checkboxInput("setUnique", "Unique values", value = TRUE),
                  hr(),
                  actionButton("selInputBuild", label = "Create")
@@ -55,9 +61,10 @@ quicktibble <- function(dat = NULL){
           condition = "input.setWeight == true",
           p("When complete, scale weights?"),
           radioButtons("setWeightScale", label = NULL,
-                       choices = c("No" = "no", "Total to 100%" = "total", "Groups to 100%" = "groups"),
-                       selected = "no",
-                       inline = TRUE)
+                       choices = "none",
+                       selected = "none",
+                       inline = TRUE),
+          helpText("Choose a column name to scale each group to 100%.")
         )
       )
     ),
@@ -77,6 +84,7 @@ quicktibble <- function(dat = NULL){
     ###
     # Update selects
     ###
+    # Column/DF selection
     observe({
       if(input$selInputData == "None"){
         updateSelectInput(session, "selInputColumn",
@@ -85,6 +93,17 @@ quicktibble <- function(dat = NULL){
         updateSelectInput(session, "selInputColumn",
                           choices = names(get(input$selInputData)))
       }
+    })
+
+    # Weight scaling
+    observe({
+      wghtChoices <- c(input$setCol2, input$setCol3, input$setCol4, input$setCol5)
+      wghtChoices <- wghtChoices[wghtChoices != ""]
+
+      updateRadioButtons(session, "setWeightScale",
+                         choices = c("No"="no", "All to 100%"="total", input$selInputColumn, wghtChoices),
+                         selected = "no",
+                         inline = TRUE)
     })
 
     ###
@@ -112,6 +131,11 @@ quicktibble <- function(dat = NULL){
           dplyr::mutate(.col = "")
         names(dat)[names(dat) == ".col"] <- input$setCol4
       }
+      if(input$setCol5 != ""){
+        dat <- dat %>%
+          dplyr::mutate(.col = "")
+        names(dat)[names(dat) == ".col"] <- input$setCol5
+      }
 
       #Weight Column
       if(input$setWeight){
@@ -135,6 +159,35 @@ quicktibble <- function(dat = NULL){
         rhandsontable::hot_col(col = input$selInputColumn,  strict = FALSE, allowInvalid = TRUE)
     })
 
+    # Finalize the output
+
+    #Scale Weights
+    tbScaled <- reactive({
+      hot = input$hot
+      if (!is.null(hot)) {
+        dat <- rhandsontable::hot_to_r(hot)
+
+        #Check to see if weight column
+        if(input$setWeight){
+          #Scale to total...
+          if(input$setWeightScale == "total"){
+            dat <- dat %>%
+              dplyr::mutate(.Weight = .Weight / sum(.Weight))
+            #Scale to a column....
+          } else if(input$setWeightScale != "no"){
+            dat <- dat %>%
+              dplyr::group_by(!!!rlang::syms(c(input$setWeightScale))) %>%
+              dplyr::mutate(.Weight = round(.Weight / sum(.Weight)), 5) %>%
+              dplyr::ungroup() %>%
+              as.data.frame()
+          } else {dat <- dat} #Other don't scale
+        }
+
+      } else {dat <- df.start()}
+
+      return(dat)
+    })
+
     # Preview the output
     codePreview <- reactive({
       hot = input$hot
@@ -142,10 +195,11 @@ quicktibble <- function(dat = NULL){
       if (!is.null(hot)) {
 
         opName <- if(input$setOPname == ""){"QuickTibble"}else{input$setOPname}
-        dat <- rhandsontable::hot_to_r(hot)
+        # dat <- rhandsontable::hot_to_r(hot)
+        dat <- tbScaled()
 
         op <- paste0(opName, " <- tibble::tibble(",
-                     paste(purrr::map_chr(1:ncol(dat), collapse_col2, dat), collapse = ",\n\t\t\t\t\t\t\t"),
+                     paste(purrr::map_chr(1:ncol(dat), collapse_col2, dat), collapse = ",\n\t\t\t\t"),
                      ")")
 
 
