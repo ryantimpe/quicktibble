@@ -1,10 +1,27 @@
 
 
 
-quicktibble <- function(dat = NULL){
+quicktibble <- function(.data = NULL){
   ################
   # Non-Reactive functions ----
   ################
+  if(is.null(.data)){
+    input.data <- NULL
+    data.check <- TRUE
+  } else if(is.data.frame(.data)){
+    input.data <- deparse(substitute(.data))
+    data.check <- TRUE
+  } else if(is.vector(.data) || is.factor(.data)){
+    input.data <- deparse(substitute(.data))
+    data.check <- FALSE
+  } else {
+    stop("Input data should be a data frame or a vector")
+  }
+
+  appCSS <-
+    "#selInputData   ~ .selectize-control.single .selectize-dropdown [data-value='Provided Array'] { color: blue }
+     #selInputColumn ~ .selectize-control.single .selectize-dropdown [data-value=`Provided Array'] { color: blue }"
+
   collapse_col2 <- function(index, data){
     #Check to see if its a numeric column...
     check.num <- suppressWarnings(sum(is.na(as.numeric(as.character(data[, index])))) > 0)
@@ -20,6 +37,7 @@ quicktibble <- function(dat = NULL){
   # UI ----
   ################
   ui <- miniUI::miniPage(
+    tags$head(tags$style(HTML(appCSS))),
     miniUI::gadgetTitleBar("quicktibble"),
     conditionalPanel(
       condition = "input.selInputBuild == 0",
@@ -27,22 +45,32 @@ quicktibble <- function(dat = NULL){
         fluidRow(
           column(width = 3,
                  selectInput("selInputData", label = "From data frame",
-                             choices = c("None", names(eapply(.GlobalEnv,is.data.frame))[unlist(eapply(.GlobalEnv,is.data.frame))])),
-                 selectInput("selInputColumn", label = "From column",
-                             choices = NULL)
+                             choices = c("None",
+                                         names(eapply(.GlobalEnv,is.data.frame))[unlist(eapply(.GlobalEnv,is.data.frame))]),
+                             selected = input.data),
+                 conditionalPanel(
+                   condition = "input.selInputData != 'Provided Array'",
+                   selectInput("selInputColumn", label = "From column",
+                               choices = NULL)
+                 ),
+                 conditionalPanel(
+                   condition = "input.selInputData == 'Provided Array'",
+                   textInput("selInputArray", label = "Array name",
+                              value = gsub("$", "_", deparse(substitute(.data)), fixed=TRUE))
+                 )
           ),
           column(width = 3,
                  strong("Column names"),
                  helpText("Leave blank to not include"),
                  textInput("setCol2", label = NULL, value ="Col2", placeholder = "Column 2 name"),
-                 textInput("setCol3", label = NULL, value ="", placeholder = "Column 3 name")
+                 textInput("setCol3", label = NULL, value ="",     placeholder = "Column 3 name")
 
           ),
           column(width = 3,
                  br(),
                  br(),
-                 textInput("setCol4", label = NULL, value ="", placeholder = "Column 4 name"),
-                 textInput("setCol5", label = NULL, value ="", placeholder = "Column 5 name")
+                 textInput("setCol4", label = NULL, value ="",     placeholder = "Column 4 name"),
+                 textInput("setCol5", label = NULL, value ="",     placeholder = "Column 5 name")
           ),
           column(width = 3,
                  checkboxInput("setWeight", "Weight column?", value = FALSE),
@@ -84,11 +112,23 @@ quicktibble <- function(dat = NULL){
     ###
     # Update selects
     ###
-    # Column/DF selection
+    # DF selection
+    observe({
+      if(!data.check){
+        updateSelectInput(session, "selInputData",
+                          choices = c("Provided Array", "None",
+                                      names(eapply(.GlobalEnv,is.data.frame))[unlist(eapply(.GlobalEnv,is.data.frame))]),
+                          selected = "Provided Array")
+      }
+    })
+    # Column selection
     observe({
       if(input$selInputData == "None"){
         updateSelectInput(session, "selInputColumn",
                           choices = "Select a data frame")
+      } else if(input$selInputData == "Provided Array"){
+        updateSelectInput(session, "selInputColumn",
+                          choices = "Provided Array")
       } else{
         updateSelectInput(session, "selInputColumn",
                           choices = names(get(input$selInputData)))
@@ -110,14 +150,28 @@ quicktibble <- function(dat = NULL){
     # Build starting data frame
     ###
     df.start <- eventReactive(input$selInputBuild, {
-      starting.column <- tibble::as.tibble(get(input$selInputData)[, input$selInputColumn]) %>% dplyr::pull()
+
+      #If starting is the provided array...
+      if(!data.check && input$selInputColumn == "Provided Array"){
+        starting.column <- as.character(.data)
+      } else {
+        starting.column <- tibble::as.tibble(get(input$selInputData)[, input$selInputColumn]) %>% dplyr::pull()
+      }
 
       if(input$setUnique){
         starting.column <- unique(starting.column)
       }
 
       dat <- tibble::tibble(starting.column, V2 = "")
-      names(dat)[1] <- input$selInputColumn
+
+      # #If starting is the provided array...
+      # if(!data.check && input$selInputColumn == "Provided Array"){
+      #   # names(dat)[1] <- gsub("[^[:alnum:] ]", "", input$selInputArray)
+      #   names(dat)[1] <- "Colllll"
+      # } else {
+        names(dat)[1] <- input$selInputColumn
+      # }
+
       names(dat)[2] <- input$setCol2
 
       #Additional columns
@@ -198,10 +252,13 @@ quicktibble <- function(dat = NULL){
         # dat <- rhandsontable::hot_to_r(hot)
         dat <- tbScaled()
 
+        if(names(dat)[1] == "Provided Array"){
+          names(dat)[1] <- gsub("[^[:alnum:] ]", "", input$selInputArray)
+        }
+
         op <- paste0(opName, " <- tibble::tibble(",
                      paste(purrr::map_chr(1:ncol(dat), collapse_col2, dat), collapse = ",\n\t\t\t\t"),
                      ")")
-
 
       } else {op <- "Print Preview"}
 
