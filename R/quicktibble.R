@@ -72,8 +72,8 @@ quicktibble <- function(.data = NULL){
 
           ),
           column(width = 3,
-                 br(),
-                 br(),
+                 strong("Column names"),
+                 helpText("---"),
                  textInput("setCol4", label = NULL, value ="",     placeholder = "Column 4 name"),
                  textInput("setCol5", label = NULL, value ="",     placeholder = "Column 5 name")
           ),
@@ -212,7 +212,7 @@ quicktibble <- function(.data = NULL){
         DF = df.start()
       }
 
-      rhandsontable::rhandsontable(DF, height = 1000) %>%
+      rhandsontable::rhandsontable(DF, height = (nrow(DF)+2)*25) %>%
         rhandsontable::hot_table(highlightCol = TRUE, highlightRow = TRUE) %>%
         rhandsontable::hot_context_menu(allowRowEdit = TRUE, allowColEdit = TRUE) %>%
         rhandsontable::hot_col(col = input$selInputColumn,  strict = FALSE, allowInvalid = TRUE)
@@ -225,6 +225,7 @@ quicktibble <- function(.data = NULL){
       hot = input$hot
       if (!is.null(hot)) {
         dat <- rhandsontable::hot_to_r(hot) %>%
+          dplyr::mutate_if(is.factor, as.character) %>%
           #Replace blanks each NA
           dplyr::mutate_all(dplyr::funs(ifelse(. == "", NA, .)))
 
