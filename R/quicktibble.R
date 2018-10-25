@@ -27,10 +27,15 @@ quicktibble <- function(.data = NULL){
     check.num <- suppressWarnings(sum(is.na(as.numeric(as.character(data[, index])))) > 0)
 
     if(!check.num){
-      paste0(names(data)[index], " = c( ", paste0(data[, index], collapse = ", "), ")")
+      op <- paste0(names(data)[index], " = c( ", paste0(data[, index], collapse = ", "), ")")
     } else {
-      paste0(names(data)[index], " = c( '", paste0(data[, index], collapse = "', '"), "')")
+      op <- paste0(names(data)[index], " = c( '", paste0(data[, index], collapse = "', '"), "')")
     }
+
+    #Replace 'NA'
+    op <- gsub("'NA'", "NA", op)
+
+    return(op)
   }
 
   ################
@@ -219,19 +224,21 @@ quicktibble <- function(.data = NULL){
     tbScaled <- reactive({
       hot = input$hot
       if (!is.null(hot)) {
-        dat <- rhandsontable::hot_to_r(hot)
+        dat <- rhandsontable::hot_to_r(hot) %>%
+          #Replace blanks each NA
+          dplyr::mutate_all(dplyr::funs(ifelse(. == "", NA, .)))
 
         #Check to see if weight column
         if(input$setWeight){
           #Scale to total...
           if(input$setWeightScale == "total"){
             dat <- dat %>%
-              dplyr::mutate(.Weight = round(.Weight / sum(.Weight), 5))
+              dplyr::mutate(.Weight = round(.Weight / sum(.Weight, na.rm = TRUE), 5))
             #Scale to a column....
           } else if(input$setWeightScale != "no"){
             dat <- dat %>%
               dplyr::group_by(!!!rlang::syms(c(input$setWeightScale))) %>%
-              dplyr::mutate(.Weight = round(.Weight / sum(.Weight), 5)) %>%
+              dplyr::mutate(.Weight = round(.Weight / sum(.Weight, na.rm = TRUE), 5)) %>%
               dplyr::ungroup() %>%
               as.data.frame()
           } else {dat <- dat} #Other don't scale
