@@ -24,7 +24,7 @@ quicktibble <- function(.data = NULL){
 
   collapse_col2 <- function(index, data){
     #Check to see if its a numeric column...
-    check.num <- suppressWarnings(sum(is.na(as.numeric(as.character(data[, index])))) > 0)
+    check.num <- suppressWarnings(sum(is.na(as.numeric(as.character(data[, index][!is.na(data[, index])])))) > 0)
 
     if(!check.num){
       op <- paste0(names(data)[index], " = c( ", paste0(data[, index], collapse = ", "), ")")
