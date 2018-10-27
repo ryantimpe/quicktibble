@@ -4,10 +4,11 @@
 #' Mostly for use inside Shiny RStudio Addins
 #'
 #' @param .data A data frame to convert
+#' @param .name Optional name for tribble output
 #' @return Text sting that can be read as a tribble in R
 #' @export
 
-df_to_tribble <- function(.data){
+df_to_tribble <- function(.data, .name = NULL){
   dat <- .data %>%
     dplyr::mutate_if(is.factor, as.character) %>%
     #Add single quotes to each character...
@@ -50,8 +51,13 @@ df_to_tribble <- function(.data){
                    sep = "\n"
                    )
 
+  if(!is.null(.name)){
+    op_trib <- paste(
+      make.names(.name), "<-", op_trib
+    )
+  }
+
   rstudioapi::insertText(op_trib)
 }
-
 
 
