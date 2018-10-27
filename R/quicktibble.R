@@ -257,16 +257,13 @@ quicktibble <- function(.data = NULL){
       if (!is.null(hot)) {
 
         opName <- if(input$setOPname == ""){"QuickTibble"}else{input$setOPname}
-        # dat <- rhandsontable::hot_to_r(hot)
         dat <- tbScaled()
 
         if(names(dat)[1] == "Provided Array"){
           names(dat)[1] <- gsub("[^[:alnum:] ]", "", input$selInputArray)
         }
 
-        op <- paste0(opName, " <- tibble::tibble(",
-                     paste(purrr::map_chr(1:ncol(dat), collapse_col2, dat), collapse = ",\n\t\t\t\t"),
-                     ")")
+        op <- df_to_tribble(dat, opName)
 
       } else {op <- "Print Preview"}
 
@@ -276,6 +273,9 @@ quicktibble <- function(.data = NULL){
     output$opPreview <- renderText({
       return(codePreview())
     })
+    # output$opPreview <- renderTable({
+    #   return(tbScaled())
+    # })
 
     # Listen for 'done' events.
     observeEvent(input$done, {

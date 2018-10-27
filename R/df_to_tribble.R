@@ -12,7 +12,8 @@ df_to_tribble <- function(.data, .name = NULL){
   dat <- .data %>%
     dplyr::mutate_if(is.factor, as.character) %>%
     #Add single quotes to each character...
-    dplyr::mutate_if(is.character, dplyr::funs(paste0("'", ., "'")))
+    dplyr::mutate_if(is.character, dplyr::funs(ifelse(is.na(.), NA, paste0("'", ., "'")))) %>%
+    dplyr::mutate_all(dplyr::funs(ifelse(is.na(.), "", .)))
 
   #Width of each column
   op_widths <- 1:ncol(dat) %>%
@@ -39,7 +40,8 @@ df_to_tribble <- function(.data, .name = NULL){
           leading_spaces <- strrep(" ", op_widths[i] - nchar(dat.row[i]) + 2)
           paste0(leading_spaces, dat.row[i])
         }) %>%
-        paste(collapse = ",")
+        paste(collapse = ",") %>%
+        stringr::str_replace_all("  ,", "NA,")
     }) %>%
     paste(collapse = ", \n")
 
@@ -57,7 +59,7 @@ df_to_tribble <- function(.data, .name = NULL){
     )
   }
 
-  rstudioapi::insertText(op_trib)
+  return(op_trib)
 }
 
 
